@@ -5,6 +5,13 @@ from datetime import datetime
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 import numpy as np
+import matplotlib
+import os
+
+
+matplotlib.use('Agg')
+os.environ['MPLCONFIGDIR'] = os.path.join(os.path.dirname(__file__), '.matplotlib')
+
 
 def get_pie_chart(category_data):
     fig, ax = plt.subplots()

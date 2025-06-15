@@ -1,0 +1,152 @@
+{% extends 'finance_app/base.html' %}
+{% block content %}
+
+<h2 class="mb-4">Dashboard</h2>
+
+<!-- Summary -->
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card bg-light border-success mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Total Income</h5>
+        <p class="card-text text-success fw-bold">₹{{ income }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card bg-light border-danger mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Total Expenses</h5>
+        <p class="card-text text-danger fw-bold">₹{{ expenses }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forecast -->
+{% if forecast %}
+  <div class="alert alert-info">📉 Next Month Forecast: ₹{{ forecast }}</div>
+{% else %}
+  <div class="alert alert-warning">Not enough data for forecast.</div>
+{% endif %}
+
+<!-- Anomalies -->
+{% if anomalies %}
+  <div class="alert alert-danger">
+    ⚠️ Unusual spending detected:
+    <ul>
+      {% for month, value in anomalies.items %}
+        <li>{{ month }} — ₹{{ value }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+
+<!-- Filters -->
+<form method="get" class="row g-2 mb-4">
+  <div class="col-md-3">
+    <label>Start Date</label>
+    <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+  </div>
+  <div class="col-md-3">
+    <label>End Date</label>
+    <input type="date" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
+  </div>
+  <div class="col-md-3">
+    <label>Category</label>
+    <select name="category" class="form-select">
+      <option value="All">All</option>
+      {% for cat in all_categories %}
+        <option value="{{ cat.name }}" {% if request.GET.category == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3 d-flex align-items-end">
+    <button class="btn btn-primary w-100">Apply Filters</button>
+  </div>
+</form>
+
+<!-- Buttons -->
+<div class="mb-4 d-flex gap-2 flex-wrap">
+  <a href="{% url 'add_transaction' %}" class="btn btn-success">+ Add Transaction</a>
+  <a href="{% url 'add_category' %}" class="btn btn-outline-secondary">+ Add Category</a>
+  <a href="{% url 'export_excel' %}" class="btn btn-outline-dark">⬇️ Export to Excel</a>
+</div>
+
+<!-- Charts -->
+<div class="row">
+  <div class="col-md-6">
+    <h5>Expense Breakdown</h5>
+    <div id="pieChart"></div>
+  </div>
+  <div class="col-md-6">
+    <h5>Monthly Expense Trend</h5>
+    <div id="lineChart"></div>
+  </div>
+</div>
+
+<script>
+  const pieData = [{
+    labels: {{ category_data.keys|list|safe }},
+    values: {{ category_data.values|list|safe }},
+    type: 'pie'
+  }];
+  Plotly.newPlot('pieChart', pieData);
+
+  const lineLabels = {{ transactions.values_list('date', flat=True)|list|safe }};
+  const lineValues = {{ transactions.values_list('amount', flat=True)|list|safe }};
+  const lineTrace = {
+    x: lineLabels,
+    y: lineValues,
+    type: 'scatter',
+    mode: 'lines+markers'
+  };
+  Plotly.newPlot('lineChart', [lineTrace]);
+</script>
+
+<!-- Transactions -->
+<h4 class="mt-5">All Transactions</h4>
+<table class="table table-striped mt-3">
+  <thead class="table-dark">
+    <tr>
+      <th>Date</th>
+      <th>Title</th>
+      <th>Amount</th>
+      <th>Type</th>
+      <th>Category</th>
+      <th>Notes</th>
+      <th>Recurring?</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in transactions %}
+    <tr>
+      <td>{{ t.date }}</td>
+      <td>{{ t.title }}</td>
+      <td>₹{{ t.amount }}</td>
+      <td>
+        {% if t.type == "Income" %}
+          <span class="text-success">{{ t.type }}</span>
+        {% else %}
+          <span class="text-danger">{{ t.type }}</span>
+        {% endif %}
+      </td>
+      <td>{{ t.category.name if t.category else "Uncategorized" }}</td>
+      <td>{{ t.notes }}</td>
+      <td>{{ t.is_recurring|yesno:"✅,❌" }}</td>
+      <td>
+        <a href="{% url 'edit_transaction' t.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+        <a href="{% url 'delete_transaction' t.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if not transactions %}
+  <p class="text-muted">No transactions to display.</p>
+{% endif %}
+
+{% endblock %}

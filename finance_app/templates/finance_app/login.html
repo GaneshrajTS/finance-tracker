@@ -1,0 +1,17 @@
+{% extends 'finance_app/base.html' %}
+{% block content %}
+<h2>Login</h2>
+<form method="post">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label>Username</label>
+    <input type="text" name="username" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label>Password</label>
+    <input type="password" name="password" class="form-control">
+  </div>
+  <button class="btn btn-primary" type="submit">Login</button>
+</form>
+<p>No account? <a href="{% url 'register' %}">Register</a></p>
+{% endblock %}

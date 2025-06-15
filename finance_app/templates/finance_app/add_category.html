@@ -1,0 +1,9 @@
+{% extends 'finance_app/base.html' %}
+{% block content %}
+<h2>Add New Category</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button class="btn btn-primary" type="submit">Add Category</button>
+</form>
+{% endblock %}
